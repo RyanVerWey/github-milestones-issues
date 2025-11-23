@@ -1,0 +1,136 @@
+{
+  "name": "github-milestones-issues",
+  "displayName": "GitHub Milestones & Issues",
+  "description": "Manage GitHub Milestones and Issues directly in VS Code with a powerful sidebar interface",
+  "version": "0.0.1",
+  "publisher": "ryanverwey",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryanverwey/github-milestones-issues.git"
+  },
+  "engines": {
+    "vscode": "^1.106.1"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "github-milestones-issues",
+          "title": "GitHub Milestones & Issues",
+          "icon": "resources/github-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "github-milestones-issues": [
+        {
+          "id": "githubMilestones",
+          "name": "Milestones"
+        },
+        {
+          "id": "githubIssues",
+          "name": "Issues"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "github-milestones-issues.authenticate",
+        "title": "Authenticate with GitHub",
+        "category": "GitHub"
+      },
+      {
+        "command": "github-milestones-issues.refreshMilestones",
+        "title": "Refresh Milestones",
+        "category": "GitHub",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "github-milestones-issues.refreshIssues",
+        "title": "Refresh Issues",
+        "category": "GitHub",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "github-milestones-issues.createMilestone",
+        "title": "Create New Milestone",
+        "category": "GitHub",
+        "icon": "$(add)"
+      },
+      {
+        "command": "github-milestones-issues.createIssue",
+        "title": "Create New Issue",
+        "category": "GitHub",
+        "icon": "$(add)"
+      },
+      {
+        "command": "github-milestones-issues.openMilestone",
+        "title": "Open Milestone",
+        "category": "GitHub"
+      },
+      {
+        "command": "github-milestones-issues.openIssue",
+        "title": "Open Issue",
+        "category": "GitHub"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "github-milestones-issues.refreshMilestones",
+          "when": "view == githubMilestones",
+          "group": "navigation"
+        },
+        {
+          "command": "github-milestones-issues.createMilestone",
+          "when": "view == githubMilestones",
+          "group": "navigation"
+        },
+        {
+          "command": "github-milestones-issues.refreshIssues",
+          "when": "view == githubIssues",
+          "group": "navigation"
+        },
+        {
+          "command": "github-milestones-issues.createIssue",
+          "when": "view == githubIssues",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.106.1",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.27.0",
+    "eslint": "^9.39.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3"
+  },
+  "dependencies": {
+    "@octokit/rest": "^22.0.1"
+  }
+}
