@@ -40,12 +40,37 @@ export class IssuesProvider implements vscode.TreeDataProvider<IssueItem> {
 
     async getChildren(element?: IssueItem): Promise<IssueItem[]> {
         if (!this.githubProvider.isAuthenticated()) {
-            return [new IssueItem('Not authenticated', '', vscode.TreeItemCollapsibleState.None, 'info')];
+            const item = new IssueItem(
+                '👋 Click here to authenticate with GitHub',
+                'Required to view and manage issues',
+                vscode.TreeItemCollapsibleState.None,
+                'action'
+            );
+            item.command = {
+                command: 'github-milestones-issues.authenticate',
+                title: 'Authenticate'
+            };
+            item.iconPath = new vscode.ThemeIcon('sign-in', new vscode.ThemeColor('notificationsInfoIcon.foreground'));
+            return [item];
         }
 
         const repo = await this.githubProvider.getCurrentRepository();
         if (!repo) {
-            return [new IssueItem('No GitHub repository detected', '', vscode.TreeItemCollapsibleState.None, 'info')];
+            const item = new IssueItem(
+                '📂 No GitHub repository detected',
+                'Open a folder with a GitHub repository',
+                vscode.TreeItemCollapsibleState.None,
+                'info'
+            );
+            item.iconPath = new vscode.ThemeIcon('folder-opened', new vscode.ThemeColor('notificationsWarningIcon.foreground'));
+            item.tooltip = new vscode.MarkdownString(
+                '**No Repository Found**\n\n' +
+                'To use this extension:\n' +
+                '1. Open a folder that contains a Git repository\n' +
+                '2. Make sure the repository has a GitHub remote\n' +
+                '3. The extension will automatically detect it'
+            );
+            return [item];
         }
 
         if (element) {
@@ -65,17 +90,51 @@ export class IssuesProvider implements vscode.TreeDataProvider<IssueItem> {
                 per_page: 100
             });
 
-            return issues
-                .filter((issue: any) => !issue.pull_request) // Filter out pull requests
+            const filteredIssues = issues.filter((issue: any) => !issue.pull_request);
+
+            if (filteredIssues.length === 0) {
+                const item = new IssueItem(
+                    '✨ No issues yet',
+                    'Click the + button above to create your first issue',
+                    vscode.TreeItemCollapsibleState.None,
+                    'empty'
+                );
+                item.iconPath = new vscode.ThemeIcon('info', new vscode.ThemeColor('notificationsInfoIcon.foreground'));
+                item.tooltip = new vscode.MarkdownString(
+                    '**Create Your First Issue**\n\n' +
+                    'Click the **+** button in the toolbar above to create an issue.\n\n' +
+                    'Use issues to:\n' +
+                    '- Track bugs and feature requests\n' +
+                    '- Collaborate with your team\n' +
+                    '- Organize work into milestones'
+                );
+                return [item];
+            }
+
+            return filteredIssues
                 .map((issue: any) => {
-                    const milestoneText = issue.milestone ? ` [${issue.milestone.title}]` : '';
+                    const milestoneText = issue.milestone ? ` 🎯 ${issue.milestone.title}` : '';
+                    const stateIcon = issue.state === 'open' ? '●' : '✓';
+                    
                     const item = new IssueItem(
-                        `#${issue.number} ${issue.title}`,
+                        `${stateIcon} #${issue.number} ${issue.title}`,
                         `@${issue.user?.login}${milestoneText}`,
                         vscode.TreeItemCollapsibleState.None,
                         issue.state
                     );
                     item.issue = issue as Issue;
+                    item.tooltip = new vscode.MarkdownString(
+                        `**Issue #${issue.number}** ${issue.state === 'closed' ? '(Closed)' : ''}\n\n` +
+                        `${issue.title}\n\n` +
+                        `---\n\n` +
+                        `**Opened by:** @${issue.user?.login}\n\n` +
+                        (issue.milestone ? `**Milestone:** ${issue.milestone.title}\n\n` : '') +
+                        (issue.labels?.length > 0 ? `**Labels:** ${issue.labels.map((l: any) => l.name).join(', ')}\n\n` : '') +
+                        `**Actions:**\n` +
+                        `- Click to open in browser\n` +
+                        `- Right-click to edit, assign, or change state\n` +
+                        `- Click edit icon for quick editing`
+                    );
                     item.command = {
                         command: 'github-milestones-issues.openIssue',
                         title: 'Open Issue',

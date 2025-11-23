@@ -2,7 +2,7 @@
   "name": "github-milestones-issues",
   "displayName": "GitHub Milestones & Issues",
   "description": "Manage GitHub Milestones and Issues directly in VS Code with a powerful sidebar interface",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "ryanverwey",
   "repository": {
     "type": "git",
@@ -39,6 +39,11 @@
       ]
     },
     "commands": [
+      {
+        "command": "github-milestones-issues.showCommands",
+        "title": "Show Commands",
+        "category": "GitHub"
+      },
       {
         "command": "github-milestones-issues.authenticate",
         "title": "Authenticate with GitHub",

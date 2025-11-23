@@ -13,6 +13,36 @@ export function activate(context: vscode.ExtensionContext) {
 	const milestonesProvider = new MilestonesProvider(githubProvider);
 	const issuesProvider = new IssuesProvider(githubProvider);
 
+	// Create Status Bar Item
+	const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+	statusBarItem.command = 'github-milestones-issues.showCommands';
+	statusBarItem.text = '$(github) GitHub Issues';
+	statusBarItem.tooltip = 'Click for GitHub Milestones & Issues commands';
+	statusBarItem.show();
+	context.subscriptions.push(statusBarItem);
+
+	// Update status bar based on authentication
+	const updateStatusBar = async () => {
+		if (githubProvider.isAuthenticated()) {
+			const repo = await githubProvider.getCurrentRepository();
+			if (repo) {
+				statusBarItem.text = `$(github) ${repo.owner}/${repo.repo}`;
+				statusBarItem.tooltip = `Connected to ${repo.owner}/${repo.repo}\nClick for commands`;
+			} else {
+				statusBarItem.text = '$(github) No repo';
+				statusBarItem.tooltip = 'No GitHub repository detected\nClick for commands';
+			}
+		} else {
+			statusBarItem.text = '$(github) Not authenticated';
+			statusBarItem.tooltip = 'Click to authenticate with GitHub';
+		}
+	};
+
+	githubProvider.onDidAuthenticate(() => {
+		updateStatusBar();
+	});
+	updateStatusBar();
+
 	// Register Tree Views
 	const milestonesTreeView = vscode.window.createTreeView('githubMilestones', {
 		treeDataProvider: milestonesProvider
@@ -24,9 +54,77 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Register Commands
 	context.subscriptions.push(
+		// Show Commands Quick Pick
+		vscode.commands.registerCommand('github-milestones-issues.showCommands', async () => {
+			const items: vscode.QuickPickItem[] = [];
+			
+			if (!githubProvider.isAuthenticated()) {
+				items.push({
+					label: '$(sign-in) Authenticate with GitHub',
+					description: 'Connect your GitHub account',
+					detail: 'Required to view and manage milestones and issues'
+				});
+			} else {
+				items.push(
+					{
+						label: '$(add) Create New Issue',
+						description: 'Add a new issue to this repository'
+					},
+					{
+						label: '$(milestone) Create New Milestone',
+						description: 'Add a new milestone to this repository'
+					},
+					{
+						label: '$(refresh) Refresh Views',
+						description: 'Update milestones and issues from GitHub'
+					},
+					{
+						label: '$(sign-out) Sign Out',
+						description: 'Disconnect from GitHub'
+					}
+				);
+			}
+
+			const selected = await vscode.window.showQuickPick(items, {
+				placeHolder: 'What would you like to do?'
+			});
+
+			if (selected) {
+				if (selected.label.includes('Authenticate')) {
+					vscode.commands.executeCommand('github-milestones-issues.authenticate');
+				} else if (selected.label.includes('Create New Issue')) {
+					vscode.commands.executeCommand('github-milestones-issues.createIssue');
+				} else if (selected.label.includes('Create New Milestone')) {
+					vscode.commands.executeCommand('github-milestones-issues.createMilestone');
+				} else if (selected.label.includes('Refresh')) {
+					milestonesProvider.refresh();
+					issuesProvider.refresh();
+					vscode.window.showInformationMessage('Views refreshed!');
+				}
+			}
+		}),
+
 		// Authentication
 		vscode.commands.registerCommand('github-milestones-issues.authenticate', async () => {
-			await githubProvider.authenticate();
+			const success = await githubProvider.authenticate();
+			if (success) {
+				// Immediately refresh both views
+				milestonesProvider.refresh();
+				issuesProvider.refresh();
+				
+				// Open the sidebar to show the data
+				vscode.commands.executeCommand('workbench.view.extension.github-milestones-issues');
+				
+				// Check if we have data to show
+				setTimeout(async () => {
+					const repo = await githubProvider.getCurrentRepository();
+					if (repo) {
+						vscode.window.showInformationMessage(
+							`✓ Loaded milestones and issues from ${repo.owner}/${repo.repo}`
+						);
+					}
+				}, 1000);
+			}
 		}),
 
 		// Refresh Commands
@@ -421,12 +519,36 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Auto-authenticate if not already authenticated
 	if (!githubProvider.isAuthenticated()) {
+		// Show welcome message with clear instructions
 		vscode.window.showInformationMessage(
-			'Please authenticate with GitHub to use Milestones & Issues extension',
-			'Authenticate'
+			'Welcome to GitHub Milestones & Issues! 👋',
+			'Get Started',
+			'Later'
 		).then(selection => {
-			if (selection === 'Authenticate') {
-				githubProvider.authenticate();
+			if (selection === 'Get Started') {
+				vscode.window.showInformationMessage(
+					'First, let\'s connect to GitHub. Click Authenticate below.',
+					'Authenticate'
+				).then(authChoice => {
+					if (authChoice === 'Authenticate') {
+						githubProvider.authenticate();
+					}
+				});
+			}
+		});
+	} else {
+		// Show quick tip for existing users
+		githubProvider.getCurrentRepository().then(repo => {
+			if (repo) {
+				vscode.window.showInformationMessage(
+					`Connected to ${repo.owner}/${repo.repo} ✓`,
+					'View Issues',
+					'View Milestones'
+				).then(selection => {
+					if (selection === 'View Issues' || selection === 'View Milestones') {
+						vscode.commands.executeCommand('workbench.view.extension.github-milestones-issues');
+					}
+				});
 			}
 		});
 	}

@@ -25,7 +25,7 @@ export class GitHubProvider {
                 await this.context.globalState.update('githubToken', token);
                 await this.initializeOctokit(token);
                 this._onDidAuthenticate.fire();
-                vscode.window.showInformationMessage('Successfully authenticated with GitHub!');
+                vscode.window.showInformationMessage('Successfully authenticated with GitHub! Loading your data...');
                 return true;
             }
         } catch (error) {
