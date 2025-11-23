@@ -88,6 +88,7 @@ export class MilestoneItem extends vscode.TreeItem {
     ) {
         super(label, collapsibleState);
         this.tooltip = `${this.label} - ${this.description}`;
+        this.contextValue = 'milestone';
         this.iconPath = new vscode.ThemeIcon(
             state === 'open' ? 'milestone' : 'pass',
             state === 'open' ? new vscode.ThemeColor('charts.green') : new vscode.ThemeColor('charts.gray')

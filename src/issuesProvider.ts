@@ -101,6 +101,7 @@ export class IssueItem extends vscode.TreeItem {
     ) {
         super(label, collapsibleState);
         this.tooltip = `${this.label} - ${this.description}`;
+        this.contextValue = 'issue';
         this.iconPath = new vscode.ThemeIcon(
             state === 'open' ? 'issues' : 'issue-closed',
             state === 'open' ? new vscode.ThemeColor('charts.green') : new vscode.ThemeColor('charts.purple')

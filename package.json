@@ -2,7 +2,7 @@
   "name": "github-milestones-issues",
   "displayName": "GitHub Milestones & Issues",
   "description": "Manage GitHub Milestones and Issues directly in VS Code with a powerful sidebar interface",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "ryanverwey",
   "repository": {
     "type": "git",
@@ -77,6 +77,43 @@
         "command": "github-milestones-issues.openIssue",
         "title": "Open Issue",
         "category": "GitHub"
+      },
+      {
+        "command": "github-milestones-issues.editIssue",
+        "title": "Edit Issue",
+        "category": "GitHub",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "github-milestones-issues.editMilestone",
+        "title": "Edit Milestone",
+        "category": "GitHub",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "github-milestones-issues.assignIssueToMilestone",
+        "title": "Assign to Milestone",
+        "category": "GitHub"
+      },
+      {
+        "command": "github-milestones-issues.closeIssue",
+        "title": "Close Issue",
+        "category": "GitHub"
+      },
+      {
+        "command": "github-milestones-issues.reopenIssue",
+        "title": "Reopen Issue",
+        "category": "GitHub"
+      },
+      {
+        "command": "github-milestones-issues.closeMilestone",
+        "title": "Close Milestone",
+        "category": "GitHub"
+      },
+      {
+        "command": "github-milestones-issues.reopenMilestone",
+        "title": "Reopen Milestone",
+        "category": "GitHub"
       }
     ],
     "menus": {
@@ -100,6 +137,63 @@
           "command": "github-milestones-issues.createIssue",
           "when": "view == githubIssues",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "github-milestones-issues.editIssue",
+          "when": "view == githubIssues && viewItem == issue",
+          "group": "inline"
+        },
+        {
+          "command": "github-milestones-issues.editIssue",
+          "when": "view == githubIssues && viewItem == issue",
+          "group": "1_edit@1"
+        },
+        {
+          "command": "github-milestones-issues.assignIssueToMilestone",
+          "when": "view == githubIssues && viewItem == issue",
+          "group": "1_edit@2"
+        },
+        {
+          "command": "github-milestones-issues.closeIssue",
+          "when": "view == githubIssues && viewItem == issue",
+          "group": "2_state@1"
+        },
+        {
+          "command": "github-milestones-issues.reopenIssue",
+          "when": "view == githubIssues && viewItem == issue",
+          "group": "2_state@2"
+        },
+        {
+          "command": "github-milestones-issues.openIssue",
+          "when": "view == githubIssues && viewItem == issue",
+          "group": "3_open@1"
+        },
+        {
+          "command": "github-milestones-issues.editMilestone",
+          "when": "view == githubMilestones && viewItem == milestone",
+          "group": "inline"
+        },
+        {
+          "command": "github-milestones-issues.editMilestone",
+          "when": "view == githubMilestones && viewItem == milestone",
+          "group": "1_edit@1"
+        },
+        {
+          "command": "github-milestones-issues.closeMilestone",
+          "when": "view == githubMilestones && viewItem == milestone",
+          "group": "2_state@1"
+        },
+        {
+          "command": "github-milestones-issues.reopenMilestone",
+          "when": "view == githubMilestones && viewItem == milestone",
+          "group": "2_state@2"
+        },
+        {
+          "command": "github-milestones-issues.openMilestone",
+          "when": "view == githubMilestones && viewItem == milestone",
+          "group": "3_open@1"
         }
       ]
     }

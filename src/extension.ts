@@ -128,6 +128,292 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		}),
 
+		// Edit Issue Command
+		vscode.commands.registerCommand('github-milestones-issues.editIssue', async (issueItem: any) => {
+			const issue = issueItem?.issue;
+			if (!issue) {
+				return;
+			}
+
+			const newTitle = await vscode.window.showInputBox({
+				prompt: 'Edit issue title',
+				value: issue.title,
+				placeHolder: 'Issue title'
+			});
+
+			if (newTitle === undefined) {
+				return;
+			}
+
+			const newBody = await vscode.window.showInputBox({
+				prompt: 'Edit issue description',
+				value: issue.body || '',
+				placeHolder: 'Issue description'
+			});
+
+			if (newBody === undefined) {
+				return;
+			}
+
+			try {
+				const octokit = githubProvider.getOctokit();
+				const repo = await githubProvider.getCurrentRepository();
+
+				if (!octokit || !repo) {
+					vscode.window.showErrorMessage('Not authenticated or no repository found');
+					return;
+				}
+
+				await octokit.issues.update({
+					owner: repo.owner,
+					repo: repo.repo,
+					issue_number: issue.number,
+					title: newTitle,
+					body: newBody
+				});
+
+				vscode.window.showInformationMessage(`Issue #${issue.number} updated successfully!`);
+				issuesProvider.refresh();
+			} catch (error) {
+				vscode.window.showErrorMessage(`Failed to update issue: ${error}`);
+			}
+		}),
+
+		// Edit Milestone Command
+		vscode.commands.registerCommand('github-milestones-issues.editMilestone', async (milestoneItem: any) => {
+			const milestone = milestoneItem?.milestone;
+			if (!milestone) {
+				return;
+			}
+
+			const newTitle = await vscode.window.showInputBox({
+				prompt: 'Edit milestone title',
+				value: milestone.title,
+				placeHolder: 'Milestone title'
+			});
+
+			if (newTitle === undefined) {
+				return;
+			}
+
+			const newDescription = await vscode.window.showInputBox({
+				prompt: 'Edit milestone description',
+				value: milestone.description || '',
+				placeHolder: 'Milestone description'
+			});
+
+			if (newDescription === undefined) {
+				return;
+			}
+
+			try {
+				const octokit = githubProvider.getOctokit();
+				const repo = await githubProvider.getCurrentRepository();
+
+				if (!octokit || !repo) {
+					vscode.window.showErrorMessage('Not authenticated or no repository found');
+					return;
+				}
+
+				await octokit.issues.updateMilestone({
+					owner: repo.owner,
+					repo: repo.repo,
+					milestone_number: milestone.number,
+					title: newTitle,
+					description: newDescription
+				});
+
+				vscode.window.showInformationMessage(`Milestone "${newTitle}" updated successfully!`);
+				milestonesProvider.refresh();
+			} catch (error) {
+				vscode.window.showErrorMessage(`Failed to update milestone: ${error}`);
+			}
+		}),
+
+		// Assign Issue to Milestone Command
+		vscode.commands.registerCommand('github-milestones-issues.assignIssueToMilestone', async (issueItem: any) => {
+			const issue = issueItem?.issue;
+			if (!issue) {
+				return;
+			}
+
+			try {
+				const octokit = githubProvider.getOctokit();
+				const repo = await githubProvider.getCurrentRepository();
+
+				if (!octokit || !repo) {
+					vscode.window.showErrorMessage('Not authenticated or no repository found');
+					return;
+				}
+
+				// Fetch milestones
+				const { data: milestones } = await octokit.issues.listMilestones({
+					owner: repo.owner,
+					repo: repo.repo,
+					state: 'open'
+				});
+
+				if (milestones.length === 0) {
+					vscode.window.showInformationMessage('No open milestones found. Create one first!');
+					return;
+				}
+
+				// Create quick pick items
+				const items = [
+					{ label: '$(circle-slash) Remove from milestone', milestone: null },
+					...milestones.map((m: any) => ({
+						label: `$(milestone) ${m.title}`,
+						description: `${m.open_issues} open, ${m.closed_issues} closed`,
+						milestone: m
+					}))
+				];
+
+				const selected = await vscode.window.showQuickPick(items, {
+					placeHolder: 'Select a milestone'
+				});
+
+				if (!selected) {
+					return;
+				}
+
+				await octokit.issues.update({
+					owner: repo.owner,
+					repo: repo.repo,
+					issue_number: issue.number,
+					milestone: selected.milestone ? selected.milestone.number : null
+				});
+
+				const message = selected.milestone 
+					? `Issue #${issue.number} assigned to "${selected.milestone.title}"`
+					: `Issue #${issue.number} removed from milestone`;
+				
+				vscode.window.showInformationMessage(message);
+				issuesProvider.refresh();
+			} catch (error) {
+				vscode.window.showErrorMessage(`Failed to assign issue: ${error}`);
+			}
+		}),
+
+		// Close Issue Command
+		vscode.commands.registerCommand('github-milestones-issues.closeIssue', async (issueItem: any) => {
+			const issue = issueItem?.issue;
+			if (!issue) {
+				return;
+			}
+
+			try {
+				const octokit = githubProvider.getOctokit();
+				const repo = await githubProvider.getCurrentRepository();
+
+				if (!octokit || !repo) {
+					vscode.window.showErrorMessage('Not authenticated or no repository found');
+					return;
+				}
+
+				await octokit.issues.update({
+					owner: repo.owner,
+					repo: repo.repo,
+					issue_number: issue.number,
+					state: 'closed'
+				});
+
+				vscode.window.showInformationMessage(`Issue #${issue.number} closed successfully!`);
+				issuesProvider.refresh();
+			} catch (error) {
+				vscode.window.showErrorMessage(`Failed to close issue: ${error}`);
+			}
+		}),
+
+		// Reopen Issue Command
+		vscode.commands.registerCommand('github-milestones-issues.reopenIssue', async (issueItem: any) => {
+			const issue = issueItem?.issue;
+			if (!issue) {
+				return;
+			}
+
+			try {
+				const octokit = githubProvider.getOctokit();
+				const repo = await githubProvider.getCurrentRepository();
+
+				if (!octokit || !repo) {
+					vscode.window.showErrorMessage('Not authenticated or no repository found');
+					return;
+				}
+
+				await octokit.issues.update({
+					owner: repo.owner,
+					repo: repo.repo,
+					issue_number: issue.number,
+					state: 'open'
+				});
+
+				vscode.window.showInformationMessage(`Issue #${issue.number} reopened successfully!`);
+				issuesProvider.refresh();
+			} catch (error) {
+				vscode.window.showErrorMessage(`Failed to reopen issue: ${error}`);
+			}
+		}),
+
+		// Close Milestone Command
+		vscode.commands.registerCommand('github-milestones-issues.closeMilestone', async (milestoneItem: any) => {
+			const milestone = milestoneItem?.milestone;
+			if (!milestone) {
+				return;
+			}
+
+			try {
+				const octokit = githubProvider.getOctokit();
+				const repo = await githubProvider.getCurrentRepository();
+
+				if (!octokit || !repo) {
+					vscode.window.showErrorMessage('Not authenticated or no repository found');
+					return;
+				}
+
+				await octokit.issues.updateMilestone({
+					owner: repo.owner,
+					repo: repo.repo,
+					milestone_number: milestone.number,
+					state: 'closed'
+				});
+
+				vscode.window.showInformationMessage(`Milestone "${milestone.title}" closed successfully!`);
+				milestonesProvider.refresh();
+			} catch (error) {
+				vscode.window.showErrorMessage(`Failed to close milestone: ${error}`);
+			}
+		}),
+
+		// Reopen Milestone Command
+		vscode.commands.registerCommand('github-milestones-issues.reopenMilestone', async (milestoneItem: any) => {
+			const milestone = milestoneItem?.milestone;
+			if (!milestone) {
+				return;
+			}
+
+			try {
+				const octokit = githubProvider.getOctokit();
+				const repo = await githubProvider.getCurrentRepository();
+
+				if (!octokit || !repo) {
+					vscode.window.showErrorMessage('Not authenticated or no repository found');
+					return;
+				}
+
+				await octokit.issues.updateMilestone({
+					owner: repo.owner,
+					repo: repo.repo,
+					milestone_number: milestone.number,
+					state: 'open'
+				});
+
+				vscode.window.showInformationMessage(`Milestone "${milestone.title}" reopened successfully!`);
+				milestonesProvider.refresh();
+			} catch (error) {
+				vscode.window.showErrorMessage(`Failed to reopen milestone: ${error}`);
+			}
+		}),
+
 		// Tree Views
 		milestonesTreeView,
 		issuesTreeView
