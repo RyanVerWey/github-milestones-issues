@@ -65,6 +65,14 @@ export function activate(context: vscode.ExtensionContext) {
 					detail: 'Required to view and manage milestones and issues'
 				});
 			} else {
+				const repo = await githubProvider.getCurrentRepository();
+				if (repo) {
+					items.push({
+						label: `$(repo) Current: ${repo.owner}/${repo.repo}`,
+						description: 'Repository detected'
+					});
+				}
+				
 				items.push(
 					{
 						label: '$(add) Create New Issue',
@@ -77,6 +85,10 @@ export function activate(context: vscode.ExtensionContext) {
 					{
 						label: '$(refresh) Refresh Views',
 						description: 'Update milestones and issues from GitHub'
+					},
+					{
+						label: '$(debug) Debug Info',
+						description: 'Show connection and repository information'
 					},
 					{
 						label: '$(sign-out) Sign Out',
@@ -100,6 +112,51 @@ export function activate(context: vscode.ExtensionContext) {
 					milestonesProvider.refresh();
 					issuesProvider.refresh();
 					vscode.window.showInformationMessage('Views refreshed!');
+				} else if (selected.label.includes('Debug Info')) {
+					const isAuth = githubProvider.isAuthenticated();
+					const repo = await githubProvider.getCurrentRepository();
+					const octokit = githubProvider.getOctokit();
+					
+					let message = `**Authentication:** ${isAuth ? '✓ Connected' : '✗ Not connected'}\n\n`;
+					message += `**Repository:** ${repo ? `${repo.owner}/${repo.repo}` : 'Not detected'}\n\n`;
+					message += `**Octokit:** ${octokit ? '✓ Initialized' : '✗ Not initialized'}\n\n`;
+					
+					if (repo && octokit) {
+						try {
+							const { data: milestones } = await octokit.issues.listMilestones({
+								owner: repo.owner,
+								repo: repo.repo,
+								state: 'all'
+							});
+							const { data: issues } = await octokit.issues.listForRepo({
+								owner: repo.owner,
+								repo: repo.repo,
+								state: 'all',
+								per_page: 100
+							});
+							message += `**Milestones:** ${milestones.length} found\n\n`;
+							message += `**Issues:** ${issues.filter((i: any) => !i.pull_request).length} found\n\n`;
+						} catch (error) {
+							message += `**API Error:** ${error}\n\n`;
+						}
+					}
+					
+					const panel = vscode.window.createWebviewPanel(
+						'debugInfo',
+						'GitHub Extension Debug Info',
+						vscode.ViewColumn.One,
+						{}
+					);
+					panel.webview.html = `
+						<!DOCTYPE html>
+						<html>
+						<body style="padding: 20px; font-family: system-ui;">
+							<h1>Debug Information</h1>
+							<pre style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px;">${message}</pre>
+							<p>Check the Output panel (View → Output) and select "Log (Window)" for more details.</p>
+						</body>
+						</html>
+					`;
 				}
 			}
 		}),
